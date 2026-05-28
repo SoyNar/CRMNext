@@ -26,4 +26,8 @@ class Client extends Model
     {
         return $this->hasMany(Contact::class);
     }
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

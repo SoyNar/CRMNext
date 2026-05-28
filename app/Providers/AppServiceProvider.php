@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use App\Services\Impl\AuthServiceImpl;
-use App\Services\InterfaceService\IAuthService;
+use App\Services\Impl\ClientsServiceImpl;
+use App\Services\InterfaceService\IClientService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -13,6 +13,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        app()->bind(IClientService::class, ClientsServiceImpl::class);
     }
 
     /**
