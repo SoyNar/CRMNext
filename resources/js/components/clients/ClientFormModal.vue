@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
+import {useClientStore} from "../../stores/client.js";
 
 const props = defineProps({
     client: { type: Object, default: null },
@@ -9,10 +10,11 @@ const emit = defineEmits(['close'])
 const isEdit = computed(() => !!props.client)
 const saving = ref(false)
 const errors = ref({})
+const store = useClientStore();
 
 const form = ref({
     name:     '',
-    email:    '',
+    nit:    '',
     phone:    '',
     url_page: '',
     status:   'prospect',
@@ -22,7 +24,7 @@ watch(() => props.client, (c) => {
     if (c) {
         form.value = {
             name:     c.name     ?? '',
-            email:    c.email    ?? '',
+            nit:    c.nit    ?? '',
             phone:    c.phone    ?? '',
             url_page: c.url_page ?? '',
             status:   c.status   ?? 'prospect',
@@ -33,7 +35,7 @@ watch(() => props.client, (c) => {
 }, { immediate: true })
 
 function resetForm() {
-    form.value = { name: '', email: '', phone: '', url_page: '', status: 'prospect' }
+    form.value = { name: '', nit: '', phone: '', url_page: '', status: 'prospect' }
     errors.value = {}
 }
 
@@ -45,30 +47,11 @@ function close() {
 async function submit() {
     saving.value = true
     errors.value = {}
-
-    const url    = isEdit.value ? `/api/clients/${props.client.id}` : '/api/clients'
-    const method = isEdit.value ? 'PUT' : 'POST'
-
     try {
-        const res = await fetch(url, {
-            method,
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept':       'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify(form.value),
-        })
-
-        const data = await res.json()
-
-        if (!res.ok) {
-            errors.value = data.errors ?? { _general: data.message ?? 'Error al guardar' }
-            return
-        }
-
-        close()
+       const payload = isEdit.value ? {...form.value, id :props.client.id} : form.value
+        console.log("Datos enviados desde el formulario:",form.value)
+        await  store.save(payload);
+       close();
     } catch (e) {
         errors.value = { _general: 'Error de conexión, intenta de nuevo.' }
     } finally {
@@ -107,10 +90,10 @@ async function submit() {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input v-model="form.email" type="email" placeholder="contacto@empresa.com"
-                               :class="['w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500', errors.email ? 'border-red-400' : 'border-gray-300']" />
-                        <p v-if="errors.email" class="mt-1 text-xs text-red-500">{{ errors.email[0] }}</p>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nit</label>
+                        <input v-model="form.nit" type="text" placeholder="nit-empresa"
+                               :class="['w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500', errors.nit ? 'border-red-400' : 'border-gray-300']" />
+                        <p v-if="errors.nit" class="mt-1 text-xs text-red-500">{{ errors.nit[0] }}</p>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">

@@ -4,6 +4,7 @@ namespace App\Services\Impl;
 
 use App\Models\Client;
 use App\Services\InterfaceService\IClientService;
+use Carbon\Carbon;
 
 class ClientsServiceImpl implements IClientService
 {
@@ -29,7 +30,14 @@ class ClientsServiceImpl implements IClientService
 
     public function create(array $data)
     {
-        // TODO: Implement create() method.
+         return Client::create([
+             'name' => $data['name'],
+             'phone' => $data['phone'],
+             'nit' => $data['nit'],
+             'url_page' => $data['url_page'],
+             'status' => $data['status'],
+             'created_by' => auth()->user()->id,
+         ]);
     }
 
     public function delete(int $id)
@@ -39,6 +47,21 @@ class ClientsServiceImpl implements IClientService
 
     public function update(int $id, array $data)
     {
-        // TODO: Implement update() method.
+         $query = Client::query();
+        $client = $query->findOrFail($id);
+        $client->update($data);
+       return  $client;
+    }
+
+    public  function getContactsByClientId(int $id)
+    {
+        return Client::with('contacts')->findOrFail($id);
+
+    }
+
+    public function getById(int $id)
+    {
+        return Client::with(['contacts','creator'])->findOrFail($id);
+
     }
 }

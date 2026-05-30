@@ -1,19 +1,78 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { clientService } from '@/services/clientService'
 
-import { getClients } from '../services/clientService'
+export const useClientStore = defineStore('clients', {
+    state: () => ({
+        clients:     [],
+        total:       0,
+        currentPage: 1,
+        clientDetails: null,
+        lastPage:    1,
+        loading:     false,
+        loadingDetail:false,
+        error:       null,
+    }),
 
-export const useClientsStore = defineStore('clients', () => {
+    actions: {
+        async fetchClients({ search = '', status = '' } = {}) {
+            this.loading = true
+            this.error   = null
+            try {
+                const data = await clientService.getAll({
+                    page: this.currentPage,
+                    search,
+                    status,
+                })
+                this.clients     = data.data
+                this.currentPage = data.current_page
+                this.lastPage    = data.last_page
+                this.total       = data.total
+            } catch {
+                this.error = 'No se pudo cargar la lista de clientes.'
+            } finally {
+                this.loading = false
+            }
+        },
+        async fetchClientDetail(id) {
+            this.loadingDetail = true
 
-    const clients = ref([])
+            try {
+                this.clientDetail = await clientService.getDetails(id)
+            } catch {
+                this.error = 'No se pudo cargar el detalle del cliente'
+            } finally {
+                this.loadingDetail = false
+            }
+        },
 
-    async function fetchClients() {
+        //guardar o editar cliente
+        async save(data){
+            try {
+                if(data.id){
+                    await  clientService.update(data.id,data)
+                }else {
+                    await clientService.create(data);
+                }
+                await  this.fetchClients()
 
-        clients.value = await getClients()
-    }
+            }catch {
+                this.error = 'No se pudo guardar el cliente';
+            }
+        },
 
-    return {
-        clients,
-        fetchClients
-    }
+
+        async deleteClient(id) {
+            try {
+                await clientService.remove(id)
+                await this.fetchClients()
+            } catch {
+                this.error = 'No se pudo eliminar el cliente.'
+            }
+        },
+
+        goToPage(page) {
+            this.currentPage = page
+            this.fetchClients()
+        },
+    },
 })

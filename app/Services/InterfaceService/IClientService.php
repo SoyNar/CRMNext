@@ -11,5 +11,8 @@ interface IClientService
     public function delete(int $id);
 
     public function update(int $id, array $data);
+    public  function getContactsByClientId(int $id);
+
+    public function getById(int $id);
 
 }

@@ -1,4 +1,4 @@
-import ClientsList from "../../ClientsShow/components/clients/ClientsList.vue";
+import ClientsList from "../components/clients/ClientsList.vue";
 import {createApp} from "vue";
 
 const el = document.querySelector('#clients-app')

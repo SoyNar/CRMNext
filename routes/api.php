@@ -12,4 +12,7 @@ Route::get('/user', function (Request $request) {
 Route::middleware('auth:sanctum')->controller(ClientController::class)->group(function () {
     Route::get('/clients', 'list')->name('clients.list');
 //    Route::get('/clients/{client}', 'show')->name('clients.show');
+    Route::post('/clients', 'store')->name('clients.store');
+    Route::put('/clients/{id}', 'update')->name('clients.update');
+    Route::get('/clients/{id}/contacts', 'getContacts')->name('clients.contacts');
 });

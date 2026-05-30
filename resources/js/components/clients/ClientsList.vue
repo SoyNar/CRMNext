@@ -1,110 +1,25 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import  ClientFormModal from "./ClientFormModal.vue";
+import { onMounted, ref } from 'vue'
+import { useClients } from '@/composables/useClients'
+import ClientFormModal from './ClientFormModal.vue'
+import DetailsClientModal from "./DetailsClientModal.vue";
 
-// ── Estado ──────────────────────────────────────────────────────────────────
-const clients    = ref([])
-const loading    = ref(false)
-const error      = ref(null)
+const {
+    clients, total, currentPage, lastPage, loading, error,
+    search, status, clearFilters,
+    clientDetail,
+    loadingDetail,
+    loadClientDetail,
+    confirmDeleteId, requestDelete,
+    goToPage, refresh,
+} = useClients()
+const detailsOpen = ref(false);
+const selectedClient = ref(null);
 
-// Filtros
-const search     = ref('')
-const status     = ref('')
 
-// Paginación
-const currentPage = ref(1)
-const lastPage    = ref(1)
-const total       = ref(0)
 
-// Modal
-const modalOpen    = ref(false)
-const editingClient = ref(null)
-// Confirm delete
-const confirmDeleteId = ref(null)
 
-// ── API ─────────────────────────────────────────────────────────────────────
-async function fetchClients() {
-    loading.value = true
-    error.value   = null
-    try {
-        const params = new URLSearchParams({ page: currentPage.value })
-        if (search.value) params.set('search', search.value)
-        if (status.value) params.set('status', status.value)
-
-        const res  = await fetch(`/api/clients?${params}`, {
-            headers: {
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            },
-            credentials: 'same-origin',
-        })
-        const data = await res.json()
-        clients.value     = data.data
-        currentPage.value = data.current_page
-        lastPage.value    = data.last_page
-        total.value       = data.total
-    } catch (e) {
-        error.value = 'No se pudo cargar la lista de clientes.'
-    } finally {
-        loading.value = false
-    }
-}
-
-async function deleteClient(id) {
-    if (confirmDeleteId.value !== id) {
-        confirmDeleteId.value = id
-        setTimeout(() => { confirmDeleteId.value = null }, 3000)
-        return
-    }
-    await fetch(`/api/clients/${id}`, {
-        method: 'DELETE',
-        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-        credentials: 'same-origin',
-    })
-    confirmDeleteId.value = null
-    fetchClients()
-}
-
-// ── Watchers ─────────────────────────────────────────────────────────────────
-let searchTimer = null
-watch(search, () => {
-    clearTimeout(searchTimer)
-    searchTimer = setTimeout(() => {
-        currentPage.value = 1
-        fetchClients()
-    }, 350)
-})
-
-watch(status, () => {
-    currentPage.value = 1
-    fetchClients()
-})
-
-function goToPage(page) {
-    currentPage.value = page
-    fetchClients()
-}
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-function openCreate() {
-    editingClient.value = null
-    modalOpen.value     = true
-}
-
-function openEdit(client) {
-    editingClient.value = client
-    modalOpen.value     = true
-}
-
-function onModalClose() {
-    modalOpen.value = false
-    fetchClients()
-}
-
-function initials(name) {
-    return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
-}
-
+// ── UI helpers (presentación pura) ───────────────────────────────────────────
 const AVATAR_COLORS = [
     'bg-blue-100 text-blue-700',
     'bg-violet-100 text-violet-700',
@@ -112,8 +27,23 @@ const AVATAR_COLORS = [
     'bg-rose-100 text-rose-700',
     'bg-teal-100 text-teal-700',
 ]
+
+function initials(name) {
+    return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
+}
+
 function avatarColor(id) {
     return AVATAR_COLORS[id % AVATAR_COLORS.length]
+}
+
+async function openDetails(client) {
+    await loadClientDetail(client.id)
+    selectedClient.value = client;
+    detailsOpen.value = true;
+}
+
+function closeDetails(){
+    detailsOpen.value = false;
 }
 
 const STATUS_MAP = {
@@ -122,7 +52,15 @@ const STATUS_MAP = {
     prospect: { label: 'Prospecto', cls: 'bg-yellow-50 text-yellow-700 ring-yellow-600/20' },
 }
 
-onMounted(() => fetchClients())
+// ── Modal ─────────────────────────────────────────────────────────────────────
+const modalOpen     = ref(false)
+const editingClient = ref(null)
+
+function openCreate() { editingClient.value = null; modalOpen.value = true }
+function openEdit(c)  { console.log("cliente recibido,",c); editingClient.value = c;    modalOpen.value = true }
+function onModalClose() { modalOpen.value = false; refresh() }
+
+onMounted(refresh)
 </script>
 
 <template>
@@ -142,7 +80,9 @@ onMounted(() => fetchClients())
             <div class="flex items-center justify-between mb-6">
                 <div>
                     <h2 class="text-xl font-semibold text-gray-900">Clientes</h2>
-                    <p class="text-sm text-gray-500 mt-0.5">{{ total }} cliente{{ total !== 1 ? 's' : '' }} registrado{{ total !== 1 ? 's' : '' }}</p>
+                    <p class="text-sm text-gray-500 mt-0.5">
+                        {{ total }} cliente{{ total !== 1 ? 's' : '' }} registrado{{ total !== 1 ? 's' : '' }}
+                    </p>
                 </div>
                 <button
                     @click="openCreate"
@@ -164,7 +104,7 @@ onMounted(() => fetchClients())
                     <input
                         v-model="search"
                         type="text"
-                        placeholder="Buscar por nombre o email..."
+                        placeholder="Buscar por nombre o Nit..."
                         class="pl-9 pr-4 h-9 w-72 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                 </div>
@@ -181,7 +121,7 @@ onMounted(() => fetchClients())
 
                 <button
                     v-if="search || status"
-                    @click="search = ''; status = ''"
+                    @click="clearFilters"
                     class="h-9 px-3 text-sm text-gray-500 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition-colors"
                 >
                     Limpiar
@@ -227,6 +167,7 @@ onMounted(() => fetchClients())
                     </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
+                    <pre> </pre>
                     <tr
                         v-for="client in clients"
                         :key="client.id"
@@ -240,7 +181,7 @@ onMounted(() => fetchClients())
                                 </div>
                                 <div>
                                     <p class="font-medium text-gray-900">{{ client.name }}</p>
-                                    <p class="text-xs text-gray-400">{{ client.email }}</p>
+                                    <p class="text-xs text-gray-400">{{ client.nit }}</p>
                                 </div>
                             </div>
                         </td>
@@ -275,16 +216,27 @@ onMounted(() => fetchClients())
                         <!-- Acciones -->
                         <td class="px-4 py-3">
                             <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <a
-                                    :href="`/clients/${client.id}`"
+                                <button
+                                    @click="openDetails(client)"
                                     class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                                     title="Ver detalle"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                         class="w-4 h-4"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke-width="2"
+                                         stroke="currentColor">
+
+                                        <path stroke-linecap="round"
+                                              stroke-linejoin="round"
+                                              d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178z" />
+
+                                        <path stroke-linecap="round"
+                                              stroke-linejoin="round"
+                                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
-                                </a>
+                                </button>
                                 <button
                                     @click="openEdit(client)"
                                     class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
@@ -295,7 +247,7 @@ onMounted(() => fetchClients())
                                     </svg>
                                 </button>
                                 <button
-                                    @click="deleteClient(client.id)"
+                                    @click="requestDelete(client.id)"
                                     :class="['w-7 h-7 flex items-center justify-center rounded-md transition-colors',
                                                   confirmDeleteId === client.id
                                                     ? 'text-white bg-red-500 hover:bg-red-600'
@@ -341,8 +293,8 @@ onMounted(() => fetchClients())
                         >→</button>
                     </div>
                 </div>
-            </div>
 
+            </div>
         </main>
 
         <!-- Modal crear / editar -->
@@ -350,6 +302,12 @@ onMounted(() => fetchClients())
             v-if="modalOpen"
             :client="editingClient"
             @close="onModalClose"
+        />
+        <DetailsClientModal
+            v-if="detailsOpen"
+            :client="clientDetail"
+            :loading="loadingDetail"
+            @close="closeDetails"
         />
     </div>
 </template>

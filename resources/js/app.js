@@ -3,6 +3,9 @@ import  {createPinia} from "pinia";
 import ClientsList from "./components/clients/ClientsList.vue";
 
 const pinia = createPinia();
+await fetch('/sanctum/csrf-cookie', {
+    credentials: 'include'
+})
 
 
 const mounts = [
