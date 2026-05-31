@@ -36,7 +36,7 @@ class ContactServiceImpl  implements IContactService
     public function create(array $data, int $clientId)
     {
         if(!empty($data['is_primary'])){
-            Contact::where('client_id',$data['client_id'])
+            Contact::where('client_id',$clientId)
                 ->where('is_primary',true)
                 ->update(['is_primary' => false]);
         }
@@ -53,13 +53,27 @@ class ContactServiceImpl  implements IContactService
         ]);
     }
 
-    public function update(array $data, int $id)
+    public function update(array $data, int $id, int $clientId)
     {
-        // TODO: Implement update() method.
+        $contact = Contact::findOrFail($id);
+
+        if (!empty($data['is_primary'])) {
+            Contact::where('client_id', $clientId)
+                ->where('id', '!=', $id)
+                ->where('is_primary', true)
+                ->update(['is_primary' => false]);
+        }
+        $contact->update(collect($data)->except(['id', 'client_id'])->toArray());
+
+        return $contact;
     }
 
-    public function delete(int $id)
+    public function delete(int $clientId, int $id)
     {
-        // TODO: Implement delete() method.
+        $contact = Contact::where('client_id', $clientId)
+            ->where('id', $id)
+            ->firstOrFail();
+        $contact->delete();
+        return $contact;
     }
 }

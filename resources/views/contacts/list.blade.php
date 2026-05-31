@@ -4,6 +4,7 @@
 
 @section('content')
     <div id="contacts-app"
-         data-client-id="{{ $client->id ?? '' }}">
+         data-client-id="{{ $client->id ?? '' }}"
+         data-client-name="{{ $client->name ?? '' }}">
     </div>
 @endsection

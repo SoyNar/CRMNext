@@ -24,9 +24,13 @@ export async function request(url, options = {}) {
         body: options.body || null,
     })
 
+    // en request() — lib/api.js
     if (!res.ok) {
         let error = 'Error en la petición'
-        try { error = await res.json() } catch (e) {}
+        try {
+            error = await res.json()
+            console.log('🔴 request lanza:', error)  // ¿llega aquí?
+        } catch (e) {}
         throw error
     }
 

@@ -39,7 +39,9 @@ class ClientsServiceImpl implements IClientService
 
     public function delete(int $id)
     {
-        // TODO: Implement delete() method.
+        $client = Client::findOrFail($id);
+        $client->delete();
+        return $client;
     }
 
     public function update(int $id, array $data)
