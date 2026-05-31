@@ -4,15 +4,15 @@ import { useContactStore } from '@/stores/contact.js'
 
 export function useContacts(clientId = null) {
     const store = useContactStore()
-
-    // Si viene clientId lo seteamos en el store
     store.clientId = clientId
 
     const { contacts, total, currentPage, lastPage, loading, error } = storeToRefs(store)
 
-    const search    = ref('')
-    const isPrimary = ref('')
+    const search         = ref('')
+    const isPrimary      = ref('')
+    const confirmDeleteId = ref(null)
 
+    // ── Filtros ───────────────────────────────────────────────────────────────
     function clearFilters() {
         search.value    = ''
         isPrimary.value = ''
@@ -32,17 +32,21 @@ export function useContacts(clientId = null) {
         store.fetchContacts({ search: search.value, isPrimary: val })
     })
 
-    const confirmDeleteId = ref(null)
+    // ── Delete con modal ──────────────────────────────────────────────────────
     function requestDelete(id) {
-        if (confirmDeleteId.value !== id) {
-            confirmDeleteId.value = id
-            setTimeout(() => { confirmDeleteId.value = null }, 3000)
-            return
-        }
-        confirmDeleteId.value = null
-        store.deleteContact(id)
+        confirmDeleteId.value = id        // abre el modal
     }
 
+    function confirmDelete() {
+        store.deleteContact(confirmDeleteId.value)
+        confirmDeleteId.value = null      // cierra el modal
+    }
+
+    function cancelDelete() {
+        confirmDeleteId.value = null      // cierra sin borrar
+    }
+
+    // ── Paginación / refresco ─────────────────────────────────────────────────
     function refresh() {
         store.fetchContacts({ search: search.value, isPrimary: isPrimary.value })
     }
@@ -53,18 +57,9 @@ export function useContacts(clientId = null) {
     }
 
     return {
-        contacts,
-        total,
-        currentPage,
-        lastPage,
-        loading,
-        error,
-        search,
-        isPrimary,
-        clearFilters,
-        confirmDeleteId,
-        requestDelete,
-        goToPage,
-        refresh,
+        contacts, total, currentPage, lastPage, loading, error,
+        search, isPrimary, clearFilters,
+        confirmDeleteId, requestDelete, confirmDelete, cancelDelete,
+        goToPage, refresh,
     }
 }

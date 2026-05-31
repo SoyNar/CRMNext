@@ -5,6 +5,7 @@ import Layout from "../shared/components/Layout.vue"
 import FormModal from "../shared/components/FormModal.vue"
 import { useContacts } from "../composables/useContacts.js"
 import { useContactStore } from "../stores/contact.js"
+import ConfirmDelete from "../shared/components/ConfirmDelete.vue";
 
 const el         = document.querySelector('#contacts-app')
 const clientId   = el?.dataset.clientId   || null
@@ -13,9 +14,9 @@ const clientName = el?.dataset.clientName || null
 const {
     contacts, total, currentPage, lastPage, loading, error,
     search, isPrimary, clearFilters,
-    confirmDeleteId, requestDelete,
+    confirmDeleteId, requestDelete, confirmDelete, cancelDelete,
     goToPage, refresh,
-} = useContacts(clientId)
+}  = useContacts(clientId)
 
 const store = useContactStore()
 
@@ -36,7 +37,7 @@ const saving         = ref(false)
 const formErrors     = ref({})
 
 function openCreate() { editingContact.value = null; modalOpen.value = true }
-function openEdit(c)  { editingContact.value = c;    modalOpen.value = true }
+function openEdit(c)  { console.log('openEdit recibe:', c); editingContact.value = c;    modalOpen.value = true }
 function onModalClose() {
     modalOpen.value = false
     formErrors.value = {}
@@ -48,8 +49,10 @@ async function handleSubmit(data) {
     formErrors.value = {}
     try {
         const payload = editingContact.value
-            ? { ...data, id: editingContact.value.id }
-            : data
+            ? { ...data, id: editingContact.value.id, client_id: editingContact.value.client_id }
+            : { ...data, client_id: clientId }
+
+        console.log('payload final:', payload)
         await store.save(payload)
         onModalClose()
     } catch (e) {
@@ -66,9 +69,24 @@ onMounted(refresh)
     <Layout>
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h2 class="text-xl font-semibold text-gray-900">
-                    {{ clientName ? `Contactos de ${clientName}` : 'Contactos' }}
-                </h2>
+                <div class="flex items-center gap-2">
+
+                    <a v-if="clientName"
+                       href="/clients"
+                       class="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+                       title="Volver a clientes"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                        </svg>
+                        Clientes
+                    </a>
+
+                    <h2 class="text-xl font-semibold text-gray-900">
+                        {{ clientName ? `Contactos de ${clientName}` : 'Contactos' }}
+                    </h2>
+
+                </div>
                 <p class="text-sm text-gray-500 mt-0.5">
                     {{ total }} contacto{{ total !== 1 ? 's' : '' }} registrado{{ total !== 1 ? 's' : '' }}
                 </p>
@@ -135,13 +153,8 @@ onMounted(refresh)
                 </button>
                 <button
                     @click="requestDelete(item.id)"
-                    :class="[
-                        'w-7 h-7 flex items-center justify-center rounded-md transition-colors',
-                        confirmDeleteId === item.id
-                            ? 'text-white bg-red-500 hover:bg-red-600'
-                            : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
-                    ]"
-                    :title="confirmDeleteId === item.id ? 'Clic para confirmar' : 'Eliminar'"
+                    class="icon-btn hover:text-red-600 hover:bg-red-50"
+                    title="Eliminar"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
@@ -159,6 +172,12 @@ onMounted(refresh)
             :errors="formErrors"
             @close="onModalClose"
             @submit="handleSubmit"
+        />
+        <ConfirmDelete
+            v-if="confirmDeleteId !== null"
+            message="¿Estás seguro de eliminar este contacto?"
+            @confirm="confirmDelete"
+            @cancel="cancelDelete"
         />
 
     </Layout>

@@ -67,4 +67,9 @@ class ClientController extends Controller
         $response = $this->clientService->getById($id);
         return $this->respond(new ClientDetailsResource($response));
     }
+
+    public function delete(int $id){
+        $response = $this->clientService->delete($id);
+        return $this->respond(new ClientResource($response));
+    }
 }

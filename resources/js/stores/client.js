@@ -45,20 +45,14 @@ export const useClientStore = defineStore('clients', {
         },
 
         //guardar o editar cliente
-        async save(data){
-            try {
-                if(data.id){
-                    await  clientService.update(data.id,data)
-                }else {
-                    await clientService.create(data);
-                }
-                await  this.fetchClients()
-
-            }catch {
-                this.error = 'No se pudo guardar el cliente';
+        async save(data) {
+            if (data.id) {
+                await clientService.update(data.id, data)
+            } else {
+                await clientService.create(data)
             }
+            await this.fetchClients()
         },
-
 
         async deleteClient(id) {
             try {
