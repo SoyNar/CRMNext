@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CreateClientRequest;
 use App\Http\Requests\UpdateClientRequest;
+use App\Http\Resources\ClientDetailsResource;
 use App\Http\Resources\ClientResource;
 use App\Http\Resources\ContactResource;
 use App\Services\InterfaceService\IClientService;
@@ -64,6 +65,6 @@ class ClientController extends Controller
     public function getById(int $id)
     {
         $response = $this->clientService->getById($id);
-        return $this->respond(new ClientResource($response));
+        return $this->respond(new ClientDetailsResource($response));
     }
 }

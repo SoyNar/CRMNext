@@ -117,7 +117,6 @@ async function submit() {
                                 :class="['w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500', errors.status ? 'border-red-400' : 'border-gray-300']">
                             <option value="prospect">Prospecto</option>
                             <option value="active">Activo</option>
-                            <option value="inactive">Inactivo</option>
                         </select>
                         <p v-if="errors.status" class="mt-1 text-xs text-red-500">{{ errors.status[0] }}</p>
                     </div>

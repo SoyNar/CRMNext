@@ -16,6 +16,7 @@ class ClientDetailsResource extends JsonResource
     {
         return [
             'name' => $this->name,
+            'nit' => $this->nit,
             'id' => $this->id,
             'phone' => $this->phone,
             'email' => $this->email,
@@ -26,7 +27,7 @@ class ClientDetailsResource extends JsonResource
                 'name' => $this->creator?->name,
             ],
             'created_at' => $this->created_at,
-            'contacts' => ContactResource::collection('contacts'),
+            'contacts' => ContactResource::collection($this->contacts),
         ];
     }
 }

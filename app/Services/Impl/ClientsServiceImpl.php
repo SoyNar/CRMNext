@@ -4,28 +4,25 @@ namespace App\Services\Impl;
 
 use App\Models\Client;
 use App\Services\InterfaceService\IClientService;
+use App\Traits\Filterable;
 use Carbon\Carbon;
 
 class ClientsServiceImpl implements IClientService
 {
+    use Filterable;
 
     public function all(array $filters = [])
     {
-        $query = Client::query();
-        if (!empty($filters['search'])) {
-           $query->where(function ($q) use ($filters) {
-               $q->where('name', 'like', '%' . $filters['search'] . '%');
-               $q->orWhere('email', 'like', '%' . $filters['search'] . '%');
-           });
-        }
-        if(!empty($filters['status'])){
-            $query->where('status', $filters['status']);
-        }
+        $query = Client::query()->where('created_by', auth()->id());
 
-        $query->with('creator')
+        $this->applySearch($query, $filters['search'] ?? null, ['name', 'email']);
+        $this->applyFilters($query, $filters, ['status']);
+
+        return $query
+            ->with('creator')
             ->withCount('contacts')
-            ->orderBy('created_at','desc');
-        return $query->paginate(15);
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
     }
 
     public function create(array $data)
@@ -61,7 +58,16 @@ class ClientsServiceImpl implements IClientService
 
     public function getById(int $id)
     {
-        return Client::with(['contacts','creator'])->findOrFail($id);
+        return Client::with(['contacts', 'creator'])
+            ->select('id','name',
+                'nit',
+                'phone',
+                'url_page',
+                'status',
+                'created_at',
+                'created_by',
+                'updated_by',)
+            ->findOrFail($id);
 
     }
 }

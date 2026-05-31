@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ContactController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -9,10 +10,6 @@ Route::get('/', function () {
 });
 
 
-
-Route::get('/clients', function () {
-    return view('clients.dashboard');
-})->name('clients');
 
 
 ///rutas autsh
@@ -24,6 +21,10 @@ Route::controller(AuthController::class)->group(function () {
     Route::post('/register', 'register');
     Route::post('/logout', 'logout');
 });
-Route::middleware('auth')->controller(ClientController::class)->group(function () {
+Route::middleware('auth:sanctum')->controller(ClientController::class)->group(function () {
     Route::get('/clients', 'index')->name('clients.index');
+});
+
+Route::middleware('auth:sanctum')->controller(ContactController::class)->group(function () {
+    Route::get('/clients/{client}/contacts',  'list')->name('clients.contacts');
 });

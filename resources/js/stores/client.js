@@ -6,7 +6,7 @@ export const useClientStore = defineStore('clients', {
         clients:     [],
         total:       0,
         currentPage: 1,
-        clientDetails: null,
+        clientDetail: null,
         lastPage:    1,
         loading:     false,
         loadingDetail:false,
@@ -35,9 +35,8 @@ export const useClientStore = defineStore('clients', {
         },
         async fetchClientDetail(id) {
             this.loadingDetail = true
-
             try {
-                this.clientDetail = await clientService.getDetails(id)
+                this.clientDetail= await clientService.getDetails(id)
             } catch {
                 this.error = 'No se pudo cargar el detalle del cliente'
             } finally {

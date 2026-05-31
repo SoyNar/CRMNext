@@ -15,7 +15,7 @@ class Contact extends Model
         'last_name',
         'email',
         'phone',
-        'cargo',
+        'position',
         'is_primary',
         'created_by',
         'updated_by',
