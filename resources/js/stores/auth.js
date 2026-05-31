@@ -14,7 +14,14 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function logout() {
-        await fetch('/logout', { method: 'POST', credentials: 'include' })
+        await fetch('/logout', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            }
+        })
         window.location.replace('/login')
     }
 
