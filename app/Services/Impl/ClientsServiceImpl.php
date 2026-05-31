@@ -13,11 +13,9 @@ class ClientsServiceImpl implements IClientService
 
     public function all(array $filters = [])
     {
-        $query = Client::query()->where('created_by', auth()->id());
-
+        $query = Client::query();
         $this->applySearch($query, $filters['search'] ?? null, ['name', 'email']);
         $this->applyFilters($query, $filters, ['status']);
-
         return $query
             ->with('creator')
             ->withCount('contacts')
