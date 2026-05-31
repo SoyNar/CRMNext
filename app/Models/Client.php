@@ -9,8 +9,8 @@ class Client extends Model
 
     protected $fillable= [
         'name',
+        'nit',
         'phone',
-        'email',
         'url_page',
         'status',
         'created_by',
@@ -25,5 +25,9 @@ class Client extends Model
     public function contacts()
     {
         return $this->hasMany(Contact::class);
+    }
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }
