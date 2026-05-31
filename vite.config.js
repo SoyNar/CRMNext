@@ -8,10 +8,7 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/js/app.js',
-                'resources/js/pages/clients.js',
-                'resources/js/pages/clients-show.js'
-
-            ],
+           ],
             refresh: true,
         }),
         vue(),
