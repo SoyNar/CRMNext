@@ -1,67 +1,258 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Mini CRM — Prueba Técnica
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplicación web de gestión de clientes y contactos construida con **Laravel 11** en el backend y **Vue 3** en el frontend, integrados en un mismo proyecto mediante Vite.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+| Capa | Tecnología |
+|---|---|
+| Backend | Laravel 11, Sanctum, Form Requests, API Resources, Service Layer |
+| Frontend | Vue 3 (Composition API), Pinia, Vite |
+| Base de datos | MySQL (local) / PostgreSQL (producción en Render) |
+| Estilos | Tailwind CSS |
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Arquitectura
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Backend
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+#### Separación de rutas
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Las rutas están divididas en dos grupos con responsabilidades claras:
 
-## Laravel Sponsors
+- `routes/web.php` — rutas de Blade que sirven las vistas HTML donde se montan los componentes Vue.
+- `routes/api.php` — rutas REST consumidas por Vue a través de `fetch`, protegidas con Sanctum.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```
+web.php   →  /clients         →  ClientController@index  (retorna vista Blade)
+api.php   →  /api/clients     →  ClientController@index  (retorna JSON)
+```
 
-### Premium Partners
+#### Capa de servicios e inyección de dependencia
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+La lógica de negocio está desacoplada del controlador mediante una capa de servicios. Cada dominio define una interfaz que el controlador recibe por inyección de dependencia, y el `AppServiceProvider` se encarga de vincular la implementación concreta:
 
-## Contributing
+```php
+// App/Contracts/ClientServiceInterface.php
+interface ClientServiceInterface
+{
+    public function paginate(array $filters): LengthAwarePaginator;
+    public function create(array $data): Client;
+    public function update(Client $client, array $data): Client;
+    public function delete(Client $client): void;
+}
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```php
+// App/Services/ClientService.php
+class ClientService implements ClientServiceInterface
+{
+    public function paginate(array $filters): LengthAwarePaginator
+    {
+        return Client::with(['creator', 'contacts'])
+            ->when($filters['search'] ?? null, fn($q, $s) => $q->where('name', 'like', "%$s%"))
+            ->when($filters['status'] ?? null, fn($q, $s) => $q->where('status', $s))
+            ->paginate(15);
+    }
+    // ...
+}
+```
 
-## Code of Conduct
+```php
+// App/Providers/AppServiceProvider.php
+$this->app->bind(ClientServiceInterface::class, ClientService::class);
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```php
+// App/Http/Controllers/Api/ClientController.php
+public function __construct(private ClientServiceInterface $service) {}
 
-## Security Vulnerabilities
+public function index(Request $request): AnonymousResourceCollection
+{
+    return ClientResource::collection(
+        $this->service->paginate($request->only(['search', 'status']))
+    );
+}
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+El controlador queda reducido a orquestar la petición HTTP: delega la lógica al servicio, transforma la respuesta con el Resource y retorna. Esto también facilita testear el servicio de forma aislada sin depender del contexto HTTP.
 
-## License
+#### Validación con Form Requests
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-# CRMNext
+Toda la validación de entrada está encapsulada en clases `FormRequest`, manteniendo los controladores limpios:
+
+```php
+// App/Http/Requests/StoreClientRequest.php
+'nit'   => ['nullable', 'regex:/^\d{3}\.\d{3}\.\d{3}-\d$/', Rule::unique('clients')->ignore($this->route('client'))],
+'phone' => ['nullable', 'regex:/^\+?[\d\s\-]{7,15}$/'],
+```
+
+#### API Resources
+
+Las respuestas JSON tienen una estructura consistente mediante Resources, evitando exponer columnas internas y garantizando el mismo contrato en todos los endpoints:
+
+```php
+// App/Http/Resources/ClientResource.php
+public function toArray($request): array
+{
+    return [
+        'id'         => $this->id,
+        'name'       => $this->name,
+        'nit'        => $this->nit,
+        'phone'      => $this->phone,
+        'status'     => $this->status,
+        'creator'    => new UserResource($this->whenLoaded('creator')),
+        'contacts'   => ContactResource::collection($this->whenLoaded('contacts')),
+        'created_at' => $this->created_at->format('Y-m-d'),
+    ];
+}
+```
+
+#### Relaciones y Eager Loading
+
+Las relaciones entre modelos están definidas explícitamente y se cargan con eager loading para evitar el problema N+1:
+
+```php
+// En el controlador
+Client::with(['creator', 'contacts'])->paginate(15);
+```
+
+---
+
+### Frontend
+
+#### Single Entry Point
+
+Toda la aplicación Vue se inicializa desde un único archivo `app.js`. El punto de entrada:
+
+1. Obtiene el CSRF cookie de Sanctum.
+2. Verifica si el usuario está autenticado.
+3. Redirige a `/login` si no hay sesión activa.
+4. Monta cada componente Vue en el selector del DOM que le corresponde.
+
+```js
+const mounts = [
+    { selector: '#clients-app', component: ClientsList },
+    { selector: '#contacts-app', component: ContactsView },
+]
+
+mounts.forEach(({ selector, component }) => {
+    const el = document.querySelector(selector)
+    if (el) createApp(component).use(pinia).mount(el)
+})
+```
+
+Esto permite tener múltiples "islas" Vue dentro de un proyecto Laravel tradicional sin necesidad de un SPA completo.
+
+#### Estructura de carpetas
+
+```
+resources/js/
+├── app.js                  # Entry point único
+├── lib/
+│   └── api.js              # Wrapper de fetch con CSRF y manejo de errores
+├── stores/                 # Estado global con Pinia
+│   ├── auth.js
+│   ├── client.js
+│   └── contact.js
+├── composables/            # Lógica reutilizable por vista
+│   ├── useClients.js
+│   └── useContacts.js
+├── pages/                  # Componentes raíz montados por app.js
+│   ├── ClientsList.vue
+│   └── ContactsView.vue
+├── components/             # Componentes específicos por dominio
+│   └── clients/
+│       └── DetailsClientModal.vue
+└── shared/
+    └── components/         # Componentes genéricos reutilizables
+        ├── DataTable.vue
+        ├── FormModal.vue
+        ├── ConfirmDelete.vue
+        └── Layout.vue
+```
+
+#### Componentes reutilizables
+
+- `DataTable.vue` — tabla genérica con búsqueda, filtro, paginación y slots para filas y acciones.
+- `FormModal.vue` — modal de formulario dinámico que construye los campos desde un array de configuración.
+- `ConfirmDelete.vue` — modal de confirmación de eliminación.
+- `Layout.vue` — layout compartido con navbar y contenedor principal.
+
+#### Gestión de estado
+
+Cada dominio tiene su propio store en Pinia y su composable:
+
+- El **store** maneja las llamadas a la API y el estado reactivo.
+- El **composable** expone la lógica de la vista (filtros con debounce, paginación, flujo de eliminación con modal).
+
+---
+
+## Funcionalidades
+
+- Autenticación con Laravel Sanctum (sesión + CSRF).
+- CRUD completo de clientes con filtro por estado y búsqueda.
+- CRUD completo de contactos por cliente con filtro por tipo (principal / general).
+- Vista de detalle de cliente con sus contactos.
+- Eliminación con modal de confirmación.
+- Validación en backend con mensajes de error mostrados inline en el formulario.
+- Paginación del lado del servidor.
+
+---
+
+## Instalación local
+
+```bash
+git clone https://github.com/tu-usuario/tu-repo.git
+cd tu-repo
+
+composer install
+npm install
+
+cp .env.example .env
+php artisan key:generate
+
+# Configura tu base de datos en .env
+php artisan migrate --seed
+
+npm run dev
+php artisan serve
+```
+
+---
+
+## Despliegue en Render
+
+La aplicación está desplegada en [Render](https://render.com) usando PostgreSQL como base de datos en producción.
+
+**Variables de entorno requeridas:**
+
+```
+APP_KEY=
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://tu-app.onrender.com
+
+DB_CONNECTION=pgsql
+DB_HOST=
+DB_PORT=5432
+DB_DATABASE=
+DB_USERNAME=
+DB_PASSWORD=
+
+SESSION_DRIVER=database
+CACHE_DRIVER=database
+```
+
+**Build command:**
+```bash
+composer install --no-dev --optimize-autoloader && npm install && npm run build && php artisan migrate --force && php artisan config:cache && php artisan route:cache
+```
+
+**Start command:**
+```bash
+php artisan serve --host=0.0.0.0 --port=$PORT
+```
