@@ -6,7 +6,9 @@ use App\Http\Controllers\ContactController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return auth()->check()
+        ? redirect()->route('clients.index')
+        : redirect()->route('login');
 });
 
 
