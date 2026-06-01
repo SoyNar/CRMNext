@@ -6,9 +6,11 @@ import DataTable from "../shared/components/DataTable.vue"
 import FormModal from '../shared/components/FormModal.vue'
 import DetailsClientModal from '../components/clients/DetailsClientModal.vue'
 import Layout from "../shared/components/Layout.vue"
+import ConfirmDelete from "../shared/components/ConfirmDelete.vue";
 
 const {
     clients, total, currentPage, lastPage, loading, error,
+     confirmDelete, cancelDelete,
     search, status, clearFilters,
     clientDetail, loadClientDetail,
     confirmDeleteId, requestDelete,
@@ -102,6 +104,8 @@ onMounted(refresh)
             :filter-options="[
                 { value: 'active',   label: 'Activo' },
                 { value: 'inactive', label: 'Inactivo' },
+                { value: 'prospect', label: 'Prospecto' },
+
             ]"
             filter-placeholder="Todos los estados"
             search-placeholder="Buscar cliente..."
@@ -118,13 +122,13 @@ onMounted(refresh)
                 <td class="px-4 py-3 text-gray-500">{{ item.phone ?? '—' }}</td>
                 <td class="px-4 py-3">
                     <span :class="[
-                        'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
-                        item.status === 'active'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-500'
-                    ]">
-                        {{ item.status === 'active' ? 'Activo' : 'Inactivo' }}
-                    </span>
+                    'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+                    item.status === 'active'   ? 'bg-green-100 text-green-700'  :
+                    item.status === 'prospect' ? 'bg-blue-100 text-blue-700'    :
+                                                 'bg-gray-100 text-gray-500'
+                ]">
+                    {{ item.status === 'active' ? 'Activo' : item.status === 'prospect' ? 'Prospecto' : 'Inactivo' }}
+                </span>
                 </td>
                 <td class="px-4 py-3 text-gray-500">{{ item.creator?.name ?? '—' }}</td>
                 <td class="px-4 py-3 text-gray-500">{{ item.created_at ?? '—' }}</td>
@@ -174,6 +178,12 @@ onMounted(refresh)
             v-if="detailsOpen && clientDetail"
             :client="clientDetail"
             @close="closeDetails"
+        />
+        <ConfirmDelete
+            v-if="confirmDeleteId !== null"
+            message="¿Estás seguro de eliminar este cliente?"
+            @confirm="confirmDelete"
+            @cancel="cancelDelete"
         />
 
     </Layout>

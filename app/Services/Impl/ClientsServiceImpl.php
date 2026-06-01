@@ -20,7 +20,7 @@ class ClientsServiceImpl implements IClientService
             ->with('creator')
             ->withCount('contacts')
             ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->paginate($filters['per_page'] ?? 15);
     }
 
     public function create(array $data)

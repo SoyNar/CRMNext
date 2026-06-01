@@ -26,8 +26,6 @@ RUN composer run-script post-autoload-dump || true
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Certificado SSL de Aiven
-COPY ca.pem /etc/ssl/ca.pem
 
 # Apache config para Laravel
 RUN echo '<VirtualHost *:10000>\n\
@@ -42,4 +40,4 @@ RUN sed -i 's/Listen 80/Listen 10000/' /etc/apache2/ports.conf
 
 EXPOSE 10000
 
-CMD ["sh", "-c", "php artisan config:cache && php artisan migrate --force && apache2-foreground"]
+CMD ["sh", "-c", "php artisan config:cache && php artisan migrate --force && php artisan db:seed --force && apache2-foreground"]

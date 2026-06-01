@@ -19,6 +19,7 @@ export function useContacts(clientId = null) {
     }
 
     let searchTimer = null
+
     watch(search, (val) => {
         clearTimeout(searchTimer)
         searchTimer = setTimeout(() => {
@@ -34,16 +35,16 @@ export function useContacts(clientId = null) {
 
     // ── Delete con modal ──────────────────────────────────────────────────────
     function requestDelete(id) {
-        confirmDeleteId.value = id        // abre el modal
+        confirmDeleteId.value = id
     }
 
     function confirmDelete() {
         store.deleteContact(confirmDeleteId.value)
-        confirmDeleteId.value = null      // cierra el modal
+        confirmDeleteId.value = null
     }
 
     function cancelDelete() {
-        confirmDeleteId.value = null      // cierra sin borrar
+        confirmDeleteId.value = null
     }
 
     // ── Paginación / refresco ─────────────────────────────────────────────────

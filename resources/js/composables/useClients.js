@@ -17,17 +17,18 @@ export function useClients() {
 
     // ── Búsqueda con debounce ─────────────────────────────────────────────────
     let searchTimer = null
+
     watch(search, (val) => {
         clearTimeout(searchTimer)
         searchTimer = setTimeout(() => {
-            store.goToPage(1)
+            store.currentPage = 1
             store.fetchClients({ search: val, status: status.value })
         }, 350)
     })
 
     // ── Filtro de estado ──────────────────────────────────────────────────────
     watch(status, (val) => {
-        store.goToPage(1)
+        store.currentPage = 1
         store.fetchClients({ search: search.value, status: val })
     })
 
@@ -35,13 +36,16 @@ export function useClients() {
     const confirmDeleteId = ref(null)
 
     function requestDelete(id) {
-        if (confirmDeleteId.value !== id) {
-            confirmDeleteId.value = id
-            setTimeout(() => { confirmDeleteId.value = null }, 3000)
-            return
-        }
+        confirmDeleteId.value = id
+    }
+
+    function confirmDelete() {
+        store.deleteClient(confirmDeleteId.value)
         confirmDeleteId.value = null
-        store.deleteClient(id)
+    }
+
+    function cancelDelete() {
+        confirmDeleteId.value = null
     }
 
     // ── Refresh manual ────────────────────────────────────────────────────────
@@ -65,7 +69,8 @@ export function useClients() {
         currentPage,
         lastPage,
         loading,
-
+        confirmDelete,
+        cancelDelete,
         clientDetail,
         loadingDetail,
         loadClientDetail,

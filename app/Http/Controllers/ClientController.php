@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CreateClientRequest;
 use App\Http\Requests\UpdateClientRequest;
+use App\Http\Resources\ClientCollectionResource;
 use App\Http\Resources\ClientDetailsResource;
 use App\Http\Resources\ClientResource;
 use App\Http\Resources\ContactResource;
 use App\Services\InterfaceService\IClientService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * @tags
@@ -30,10 +32,11 @@ class ClientController extends Controller
     {
         $validated = $request->validate([
             'search' => 'nullable|string',
-            'status' => ['nullable', 'string'],
+            'status' => 'nullable|string',
+            'per_page' => 'nullable|integer',
         ]);
         $response = $this->clientService->all($validated);
-        return $this->respond(ClientResource::collection($response));
+        return new ClientCollectionResource($response);
     }
 
     public function index()

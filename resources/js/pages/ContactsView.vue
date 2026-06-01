@@ -111,7 +111,6 @@ onMounted(refresh)
             :filter-value="isPrimary"
             :filter-options="[
                 { value: '1', label: 'Principal' },
-                { value: '0', label: 'Secundario' },
             ]"
             filter-placeholder="Todos"
             search-placeholder="Buscar contacto..."

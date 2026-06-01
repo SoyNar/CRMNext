@@ -23,6 +23,7 @@ export const useClientStore = defineStore('clients', {
                     search,
                     status,
                 })
+                console.log('response:', data)
                 this.clients     = data.data
                 this.currentPage = data.current_page
                 this.lastPage    = data.last_page
