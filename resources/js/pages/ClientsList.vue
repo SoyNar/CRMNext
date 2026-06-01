@@ -22,7 +22,7 @@ const store = useClientStore()
 // ── Campos del formulario ─────────────────────────────────────────────────────
 const clientFields = [
     { key: 'name',     label: 'Nombre',    required: true,  placeholder: 'Acme Corp' },
-    { key: 'nit',      label: 'Nit',                        placeholder: '900.000.000-0' },
+    { key: 'nit',      label: 'Nit',                        placeholder: '900.000.000-0, 120.125.123-8,109391367-6' },
     { key: 'phone',    label: 'Teléfono',                   placeholder: '+57 300 000 0000' },
     { key: 'url_page', label: 'Sitio web',                  placeholder: 'https://empresa.com' },
     { key: 'status',   label: 'Estado',    required: true,  type: 'select', default: 'prospect',
