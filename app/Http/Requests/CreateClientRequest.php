@@ -28,7 +28,7 @@ class CreateClientRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:20',
-                'regex:/^\d{3}\.\d{3}\.\d{3}-\d$/',
+                'regex:/^[\d\.]{6,15}-\d{1}$/',
                 Rule::unique('clients')->ignore($this->route('client')),
             ],
             'phone' => [

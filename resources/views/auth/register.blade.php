@@ -61,16 +61,36 @@
             <!-- Password -->
             <div>
                 <label class="block text-sm font-medium text-gray-600 mb-1">
-                    Password
+                    Contraseña
                 </label>
                 <input
                     type="password"
                     name="password"
                     required
                     class="w-full px-4 py-3 rounded-xl border border-gray-200
-                       bg-gray-50 focus:bg-white
-                       focus:outline-none focus:ring-2 focus:ring-green-500
-                       transition shadow-sm"
+           bg-gray-50 focus:bg-white
+           focus:outline-none focus:ring-2 focus:ring-green-500
+           transition shadow-sm"
+                    placeholder="••••••••"
+                >
+                <p class="text-xs text-gray-400 mt-1">
+                    Mínimo 8 caracteres, al menos una letra y un número.
+                </p>
+            </div>
+
+            <!-- Confirmar Password -->
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">
+                    Confirmar contraseña
+                </label>
+                <input
+                    type="password"
+                    name="password_confirmation"
+                    required
+                    class="w-full px-4 py-3 rounded-xl border border-gray-200
+           bg-gray-50 focus:bg-white
+           focus:outline-none focus:ring-2 focus:ring-green-500
+           transition shadow-sm"
                     placeholder="••••••••"
                 >
             </div>
