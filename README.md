@@ -36,8 +36,10 @@ docker compose up --build
 ```
 
 Al iniciar, el contenedor ejecuta automáticamente las migraciones y carga los datos de prueba. Espera a ver en los logs:s
-
-
+> No es necesario configurar un `.env`.
+> Las variables de entorno están definidas en el `docker-compose.yml`.
+> 
+> 
 **3. Abrir en el navegador**
 
 http://localhost:10000
